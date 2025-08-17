@@ -44,4 +44,4 @@ Thumbs.db
 .pm2/
 
 # Docker
-Dockerfile
+Dockerfile.env
