@@ -19,3 +19,26 @@ const main = async () => {
 };
 
 main();
+
+// Add to your ready event in index.js or ready.js listener
+client.once("ready", async () => {
+  console.log(`🤖 Bot ready! Connected to ${client.guilds.cache.size} servers`);
+
+  // Force register commands globally
+  try {
+    console.log("🔄 Registering commands globally...");
+
+    const commands = [
+      { name: "ping", description: "Ping pong!" },
+      { name: "mute", description: "Timeout a user" },
+      { name: "warn", description: "Warning system commands" },
+      { name: "unmute", description: "Remove timeout from a user" },
+      { name: "avatar", description: "Get a user's avatar" },
+    ];
+
+    await client.application.commands.set(commands);
+    console.log("✅ Global commands registered!");
+  } catch (error) {
+    console.error("❌ Failed to register commands:", error);
+  }
+});
