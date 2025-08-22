@@ -34,6 +34,13 @@ export class WarnCommand extends Command {
                 .setDescription("Reason for the warning")
                 .setRequired(true)
             )
+            .addIntegerOption((option) =>
+              option
+                .setName("duration")
+                .setDescription("Duration in minutes for automatic timeout (optional)" )
+                .setRequired(false)
+                .setMinValue(1)
+                .setMaxValue(10080)
         )
         .addSubcommand((subcommand) =>
           subcommand
