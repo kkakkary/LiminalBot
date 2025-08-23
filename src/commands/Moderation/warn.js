@@ -37,10 +37,13 @@ export class WarnCommand extends Command {
             .addIntegerOption((option) =>
               option
                 .setName("duration")
-                .setDescription("Duration in minutes for automatic timeout (optional)" )
+                .setDescription(
+                  "Duration in minutes for automatic timeout (optional)"
+                )
                 .setRequired(false)
                 .setMinValue(1)
                 .setMaxValue(10080)
+            )
         )
         .addSubcommand((subcommand) =>
           subcommand
@@ -116,6 +119,7 @@ export class WarnCommand extends Command {
   async handleAdd(interaction) {
     const user = interaction.options.getUser("user");
     const reason = interaction.options.getString("reason");
+    const duration = interaction.options.getInteger("duration"); // Get the duration parameter
 
     try {
       // Check if trying to warn themselves
@@ -190,6 +194,11 @@ export class WarnCommand extends Command {
             value: `<t:${Math.floor(Date.now() / 1000)}:F>`,
             inline: true,
           },
+          {
+            name: "Timeout Duration",
+            value: duration ? `${duration} minutes` : "None specified",
+            inline: false,
+          },
           { name: "Reason", value: `\`\`\`${reason}\`\`\``, inline: false }
         )
         .setThumbnail(user.displayAvatarURL({ size: 64 }))
@@ -198,6 +207,28 @@ export class WarnCommand extends Command {
           iconURL: interaction.user.displayAvatarURL({ size: 32 }),
         })
         .setTimestamp();
+
+      // Apply manual timeout if duration is specified
+      let timeoutApplied = false;
+      if (duration && targetMember) {
+        try {
+          const timeoutMs = duration * 60 * 1000; // Convert minutes to milliseconds
+          await targetMember.timeout(timeoutMs, `Manual timeout: ${reason}`);
+          timeoutApplied = true;
+
+          embed.addFields({
+            name: "Manual Timeout",
+            value: `🔇 User timed out for ${duration} minutes`,
+            inline: false,
+          });
+        } catch (error) {
+          embed.addFields({
+            name: "Manual Timeout",
+            value: "❌ Could not apply manual timeout",
+            inline: false,
+          });
+        }
+      }
 
       // Send DM to warned user
       try {
@@ -227,6 +258,15 @@ export class WarnCommand extends Command {
           })
           .setTimestamp();
 
+        // Add timeout info to user DM if applicable
+        if (duration && timeoutApplied) {
+          userEmbed.addFields({
+            name: "Timeout Applied",
+            value: `You have been timed out for ${duration} minutes`,
+            inline: false,
+          });
+        }
+
         await user.send({ embeds: [userEmbed] });
         embed.addFields({
           name: "User Notification",
@@ -241,8 +281,8 @@ export class WarnCommand extends Command {
         });
       }
 
-      // Check for automatic actions based on warning count
-      if (totalWarnings >= 3 && targetMember) {
+      // Check for automatic actions based on warning count (only if manual timeout wasn't applied)
+      if (!timeoutApplied && totalWarnings >= 3 && targetMember) {
         try {
           const timeoutDuration = this.getTimeoutDuration(totalWarnings);
           await targetMember.timeout(
